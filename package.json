@@ -1,0 +1,20 @@
+{
+  "name": "issue-tester",
+  "version": "1.0.0",
+  "description": "Simple Node.js server with Winston logging to Grafana Loki",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["nodejs", "express", "winston", "loki", "logging"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "winston": "^3.11.0",
+    "winston-loki": "^6.0.0",
+    "dotenv": "^16.3.1"
+  }
+}
+
