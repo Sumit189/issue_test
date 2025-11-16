@@ -35,19 +35,8 @@ app.post('/process', (req, res, next) => {
   try {
     const { userId, action } = req.body;
     
-    if (!userId || !action) {
-      const error = new Error('Missing required fields: userId and action are required');
-      logger.error('Validation error in /process endpoint', {
-        error: error.message,
-        receivedData: { userId, action },
-        url: req.url,
-        method: req.method
-      });
-      return next(error);
-    }
-    
-    if (typeof userId !== 'string' || userId.trim().length === 0) {
-      const error = new Error('Invalid userId: must be a non-empty string');
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0 || !action || typeof action !== 'string' || action.trim().length === 0) {
+      const error = new Error('Missing or invalid required fields: userId and action must be non-empty strings.');
       logger.error('Validation error in /process endpoint', {
         error: error.message,
         receivedData: { userId, action },
@@ -76,6 +65,11 @@ app.post('/calculate', (req, res, next) => {
     
     logger.info('Calculate endpoint called', { receivedData: data });
     
+    if (!data.user || !data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      const error = new Error('Invalid input: user and items array (non-empty) are required.');
+      logger.error('Validation error in /calculate endpoint', { error: error.message, receivedData: data });
+      return next(error);
+    }
     const user = data.user;
     const items = data.items;
     
@@ -108,11 +102,12 @@ app.get('/error', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  logger.error('Error occurred', {
-    error: err.message,
+  logger.error('An error occurred', {
+    message: err.message,
     stack: err.stack,
     url: req.url,
-    method: req.method
+    method: req.method,
+    originalError: err
   });
   res.status(500).json({ error: 'Internal server error', message: err.message });
 });
@@ -121,4 +116,3 @@ app.listen(PORT, () => {
   logger.info(`Server started on port ${PORT}`);
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
