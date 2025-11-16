@@ -1,0 +1,1 @@
+const processedValue = input.value ? input.value.toUpperCase() : ''; // Or handle as an error if appropriate
