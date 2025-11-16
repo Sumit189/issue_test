@@ -35,30 +35,34 @@ app.post('/process', (req, res, next) => {
   try {
     const { userId, action } = req.body;
     
-    if (!userId || !action) {
-      const error = new Error('Missing required fields: userId and action are required');
+    // Enhanced validation for userId and action
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+      const error = new Error('Invalid userId: must be a non-empty string.');
       logger.error('Validation error in /process endpoint', {
         error: error.message,
         receivedData: { userId, action },
         url: req.url,
         method: req.method
       });
-      return next(error);
+      return res.status(400).json({ error: error.message });
     }
-    
-    if (typeof userId !== 'string' || userId.trim().length === 0) {
-      const error = new Error('Invalid userId: must be a non-empty string');
+
+    if (!action || typeof action !== 'string' || action.trim().length === 0) {
+      const error = new Error('Invalid action: must be a non-empty string.');
       logger.error('Validation error in /process endpoint', {
         error: error.message,
         receivedData: { userId, action },
         url: req.url,
         method: req.method
       });
-      return next(error);
+      return res.status(400).json({ error: error.message });
     }
-    
-    logger.info('Processing request', { userId, action });
-    res.json({ message: 'Processing completed', userId, action });
+
+    // Basic sanitization for userId (example: remove leading/trailing whitespace)
+    const sanitizedUserId = userId.trim();
+
+    logger.info('Processing request', { userId: sanitizedUserId, action });
+    res.json({ message: 'Processing completed', userId: sanitizedUserId, action });
   } catch (err) {
     logger.error('Unexpected error in /process endpoint', {
       error: err.message,
@@ -66,7 +70,7 @@ app.post('/process', (req, res, next) => {
       url: req.url,
       method: req.method
     });
-    next(err);
+    res.status(500).json({ error: 'Internal server error', message: err.message });
   }
 });
 
@@ -75,29 +79,59 @@ app.post('/calculate', (req, res, next) => {
     const data = req.body;
     
     logger.info('Calculate endpoint called', { receivedData: data });
-    
-    const user = data.user;
-    const items = data.items;
-    
-    const userName = user.name.toUpperCase();
-    const totalItems = items.length;
-    const firstItem = items[0].value;
-    const lastItem = items[items.length - 1].value;
-    
+
+    // Validate user object and its properties
+    if (!data.user || typeof data.user.name !== 'string' || data.user.name.trim().length === 0) {
+      const error = new Error('Invalid user data: user.name is required and must be a non-empty string.');
+      logger.error('Invalid data in /calculate endpoint', {
+        error: error.message,
+        receivedData: data
+      });
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Validate items array and its properties
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      const error = new Error('Invalid items data: items must be a non-empty array.');
+      logger.error('Invalid data in /calculate endpoint', {
+        error: error.message,
+        receivedData: data
+      });
+      return res.status(400).json({ error: error.message });
+    }
+
+    const userName = data.user.name.toUpperCase();
+    const totalItems = data.items.length;
+    // Ensure first and last items have a 'value' property that is a number
+    if (typeof data.items[0].value !== 'number' || typeof data.items[totalItems - 1].value !== 'number') {
+      const error = new Error('Invalid item value: first and last items must have a numeric value.');
+      logger.error('Invalid data in /calculate endpoint', {
+        error: error.message,
+        receivedData: data
+      });
+      return res.status(400).json({ error: error.message });
+    }
+
+    const firstItemValue = data.items[0].value;
+    const lastItemValue = data.items[totalItems - 1].value;
+
     const result = {
       userName,
       totalItems,
-      firstItem,
-      lastItem,
-      sum: firstItem + lastItem
+      firstItem: firstItemValue,
+      lastItem: lastItemValue,
+      sum: firstItemValue + lastItemValue
     };
     
     res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
+    logger.error('Unexpected error in /calculate endpoint', {
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
     });
-    next(err);
+    res.status(500).json({ error: 'Internal server error', message: err.message });
   }
 });
 
@@ -121,4 +155,3 @@ app.listen(PORT, () => {
   logger.info(`Server started on port ${PORT}`);
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
