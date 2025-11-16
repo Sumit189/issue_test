@@ -94,9 +94,7 @@ app.post('/calculate', (req, res, next) => {
     
     res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
-    });
+    logger.error(`Error in server "calculate" endpoint, error - ${err.message})}`);
     next(err);
   }
 });
