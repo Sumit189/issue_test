@@ -31,6 +31,76 @@ app.post('/log', (req, res) => {
   res.json({ message: 'Log received', data: req.body });
 });
 
+app.post('/process', (req, res, next) => {
+  try {
+    const { userId, action } = req.body;
+    
+    if (!userId || !action) {
+      const error = new Error('Missing required fields: userId and action are required');
+      logger.error('Validation error in /process endpoint', {
+        error: error.message,
+        receivedData: { userId, action },
+        url: req.url,
+        method: req.method
+      });
+      return next(error);
+    }
+    
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      const error = new Error('Invalid userId: must be a non-empty string');
+      logger.error('Validation error in /process endpoint', {
+        error: error.message,
+        receivedData: { userId, action },
+        url: req.url,
+        method: req.method
+      });
+      return next(error);
+    }
+    
+    logger.info('Processing request', { userId, action });
+    res.json({ message: 'Processing completed', userId, action });
+  } catch (err) {
+    logger.error('Unexpected error in /process endpoint', {
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
+    next(err);
+  }
+});
+
+app.post('/calculate', (req, res, next) => {
+  try {
+    const data = req.body;
+    
+    logger.info('Calculate endpoint called', { receivedData: data });
+    
+    const user = data.user;
+    const items = data.items;
+    
+    const userName = user.name.toUpperCase();
+    const totalItems = items.length;
+    const firstItem = items[0].value;
+    const lastItem = items[items.length - 1].value;
+    
+    const result = {
+      userName,
+      totalItems,
+      firstItem,
+      lastItem,
+      sum: firstItem + lastItem
+    };
+    
+    res.json({ message: 'Calculation completed', result });
+  } catch (err) {
+    logger.error('Invalid data', {
+      error: err.message
+    });
+    next(err);
+  }
+});
+
 app.get('/error', (req, res, next) => {
   logger.error('Error endpoint accessed - generating test error');
   const error = new Error('Test error for logging');
