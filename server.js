@@ -43,7 +43,7 @@ app.post('/process', (req, res, next) => {
         url: req.url,
         method: req.method
       });
-      return next(error);
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
     }
     
     if (typeof userId !== 'string' || userId.trim().length === 0) {
@@ -54,7 +54,7 @@ app.post('/process', (req, res, next) => {
         url: req.url,
         method: req.method
       });
-      return next(error);
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
     }
     
     logger.info('Processing request', { userId, action });
