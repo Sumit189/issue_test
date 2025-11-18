@@ -73,8 +73,14 @@ app.post('/process', (req, res, next) => {
 app.post('/calculate', (req, res, next) => {
   try {
     const data = req.body;
-    
     logger.info('Calculate endpoint called', { receivedData: data });
+
+    if (!data || !data.user || typeof data.user.name !== 'string' || !Array.isArray(data.items) || data.items.length === 0) {
+      const error = new Error('Invalid input: "user" object with a "name" string and a non-empty "items" array are required.');
+      logger.error('Validation failed in /calculate', { error: error.message, body: data });
+      res.status(400).json({ error: 'Bad Request', message: error.message });
+      return;
+    }
     
     const user = data.user;
     const items = data.items;
@@ -121,4 +127,3 @@ app.listen(PORT, () => {
   logger.info(`Server started on port ${PORT}`);
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
