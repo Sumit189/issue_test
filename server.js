@@ -1,66 +1,38 @@
-const express = require('express');
-const logger = require('./logger');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use((req, res, next) => {
-  logger.info('Incoming request', {
-    method: req.method,
-    url: req.url,
-    ip: req.ip
-  });
-  next();
-});
-
-app.get('/', (req, res) => {
-  logger.info('Root endpoint accessed');
-  res.json({ message: 'Server is running', timestamp: new Date().toISOString() });
-});
-
-app.get('/health', (req, res) => {
-  logger.info('Health check endpoint accessed');
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
-
-app.post('/log', (req, res) => {
-  logger.info('Log endpoint called', { body: req.body });
-  res.json({ message: 'Log received', data: req.body });
-});
-
-app.post('/process', (req, res, next) => {
+app.post('/calculate', (req, res, next) => {
   try {
-    const { userId, action } = req.body;
-    
-    if (!userId || !action) {
-      const error = new Error('Missing required fields: userId and action are required');
-      logger.error('Validation error in /process endpoint', {
-        error: error.message,
-        receivedData: { userId, action },
-        url: req.url,
-        method: req.method
-      });
-      return next(error);
+    const data = req.body;
+    logger.info('Calculate endpoint called', { receivedData: data });
+
+    // Validate the structure of the incoming data
+    if (!data || !data.user || typeof data.user.name !== 'string' || !Array.isArray(data.items) || data.items.length === 0) {
+      const errorMsg = 'Invalid request body: must include a user object with a name and a non-empty items array.';
+      logger.error('Validation error in /calculate', { error: errorMsg, body: req.body });
+      return res.status(400).json({ error: 'Bad Request', message: errorMsg });
+    }
+
+    const items = data.items;
+    const firstItem = items[0];
+    const lastItem = items[items.length - 1];
+
+    // Validate nested properties
+    if (firstItem.value === undefined || lastItem.value === undefined) {
+      const errorMsg = 'Invalid request body: first and last items in the array must have a `value` property.';
+      logger.error('Validation error in /calculate', { error: errorMsg, body: req.body });
+      return res.status(400).json({ error: 'Bad Request', message: errorMsg });
     }
     
-    if (typeof userId !== 'string' || userId.trim().length === 0) {
-      const error = new Error('Invalid userId: must be a non-empty string');
-      logger.error('Validation error in /process endpoint', {
-        error: error.message,
-        receivedData: { userId, action },
-        url: req.url,
-        method: req.method
-      });
-      return next(error);
-    }
+    const result = {
+      userName: data.user.name.toUpperCase(),
+      totalItems: items.length,
+      firstItem: firstItem.value,
+      lastItem: lastItem.value,
+      sum: firstItem.value + lastItem.value
+    };
     
-    logger.info('Processing request', { userId, action });
-    res.json({ message: 'Processing completed', userId, action });
+    res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Unexpected error in /process endpoint', {
+    // This catch block will now only handle truly unexpected errors, not validation failures.
+    logger.error('Unexpected error in /calculate endpoint', {
       error: err.message,
       stack: err.stack,
       url: req.url,
@@ -69,56 +41,3 @@ app.post('/process', (req, res, next) => {
     next(err);
   }
 });
-
-app.post('/calculate', (req, res, next) => {
-  try {
-    const data = req.body;
-    
-    logger.info('Calculate endpoint called', { receivedData: data });
-    
-    const user = data.user;
-    const items = data.items;
-    
-    const userName = user.name.toUpperCase();
-    const totalItems = items.length;
-    const firstItem = items[0].value;
-    const lastItem = items[items.length - 1].value;
-    
-    const result = {
-      userName,
-      totalItems,
-      firstItem,
-      lastItem,
-      sum: firstItem + lastItem
-    };
-    
-    res.json({ message: 'Calculation completed', result });
-  } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
-    });
-    next(err);
-  }
-});
-
-app.get('/error', (req, res, next) => {
-  logger.error('Error endpoint accessed - generating test error');
-  const error = new Error('Test error for logging');
-  next(error);
-});
-
-app.use((err, req, res, next) => {
-  logger.error('Error occurred', {
-    error: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method
-  });
-  res.status(500).json({ error: 'Internal server error', message: err.message });
-});
-
-app.listen(PORT, () => {
-  logger.info(`Server started on port ${PORT}`);
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
