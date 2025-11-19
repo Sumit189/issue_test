@@ -73,8 +73,25 @@ app.post('/process', (req, res, next) => {
 app.post('/calculate', (req, res, next) => {
   try {
     const data = req.body;
-    
     logger.info('Calculate endpoint called', { receivedData: data });
+
+    if (!data || !data.user || typeof data.user.name !== 'string' || !data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      const error = new Error('Invalid request body: user, user.name, and a non-empty items array are required.');
+      logger.error('Validation error in /calculate endpoint', { 
+        error: error.message, 
+        receivedData: data 
+      });
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
+    }
+
+    if (typeof data.items[0].value !== 'number' || typeof data.items[data.items.length - 1].value !== 'number') {
+      const error = new Error('Invalid item format: item values must be numbers.');
+      logger.error('Validation error in /calculate endpoint', { 
+        error: error.message, 
+        receivedData: data 
+      });
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
+    }
     
     const user = data.user;
     const items = data.items;
@@ -94,8 +111,9 @@ app.post('/calculate', (req, res, next) => {
     
     res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
+    logger.error('Unexpected error in /calculate endpoint',{
+      error: err.message,
+      stack: err.stack
     });
     next(err);
   }
