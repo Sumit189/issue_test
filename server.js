@@ -72,18 +72,29 @@ app.post('/process', (req, res, next) => {
 
 app.post('/calculate', (req, res, next) => {
   try {
-    const data = req.body;
-    
-    logger.info('Calculate endpoint called', { receivedData: data });
-    
-    const user = data.user;
-    const items = data.items;
-    
+    const { user, items } = req.body;
+
+    logger.info('Calculate endpoint called', { receivedData: req.body });
+
+    // Input validation
+    if (!user || typeof user !== 'object' || typeof user.name !== 'string' || user.name.trim().length === 0) {
+      const error = new Error('Invalid or missing user data. Expected an object with a non-empty name property.');
+      logger.error('Validation error in /calculate endpoint', { error: error.message, receivedData: req.body });
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      const error = new Error('Invalid or missing items data. Expected a non-empty array.');
+      logger.error('Validation error in /calculate endpoint', { error: error.message, receivedData: req.body });
+      return res.status(400).json({ error: 'Bad Request', message: error.message });
+    }
+
+    // Process data now that it is validated
     const userName = user.name.toUpperCase();
     const totalItems = items.length;
     const firstItem = items[0].value;
     const lastItem = items[items.length - 1].value;
-    
+
     const result = {
       userName,
       totalItems,
@@ -91,11 +102,13 @@ app.post('/calculate', (req, res, next) => {
       lastItem,
       sum: firstItem + lastItem
     };
-    
+
     res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
+    // This will now catch unexpected errors, e.g., if item.value is missing
+    logger.error('Error during calculation', {
+      error: err.message,
+      stack: err.stack
     });
     next(err);
   }
