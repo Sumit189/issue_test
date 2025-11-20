@@ -75,6 +75,14 @@ app.post('/calculate', (req, res, next) => {
     const data = req.body;
     
     logger.info('Calculate endpoint called', { receivedData: data });
+
+    // Add robust validation for the request body structure
+    if (!data || !data.user || typeof data.user.name !== 'string' ||
+        !data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      const errorMsg = 'Invalid request body: must include a user object with a name, and a non-empty items array.';
+      logger.warn('Validation failed for /calculate', { error: errorMsg, receivedData: data });
+      return res.status(400).json({ error: 'Bad Request', message: errorMsg });
+    }
     
     const user = data.user;
     const items = data.items;
