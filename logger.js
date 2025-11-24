@@ -37,7 +37,7 @@ const logger = winston.createLogger({
     }),
     new LokiTransport({
       host: process.env.GRAFANA_HOST,
-      labels: { app: 'issue-tester' },
+      labels: { service_name: 'issue-tester' },
       json: true,
       basicAuth: process.env.GRAFANA_BASICAUTH,
       format: format.combine(

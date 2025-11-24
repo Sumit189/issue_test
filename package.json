@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "send-logs": "node log_sender.js"
   },
   "keywords": ["nodejs", "express", "winston", "loki", "logging"],
   "author": "",
