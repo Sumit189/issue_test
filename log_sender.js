@@ -1,31 +1,34 @@
 const logger = require('./logger');
 
-// Send one info log every 3 seconds
-const INTERVAL_MS = 3000;
 
 let count = 0;
+let timer = null;
+let shuttingDown = false;
+
+function getRandomDelayMs() {
+  return Math.floor(Math.random() * 30_000) + 1_000;
+}
 
 const sendLog = () => {
+  if (shuttingDown) return;
   count += 1;
   logger.info('API being used, all good', {
     sequence: count,
     timestamp: new Date().toISOString()
   });
+  timer = setTimeout(sendLog, getRandomDelayMs());
 };
 
-// Send one immediately, then every INTERVAL_MS
 sendLog();
-const timer = setInterval(sendLog, INTERVAL_MS);
 
-// Graceful shutdown
 const shutdown = () => {
-  clearInterval(timer);
+  shuttingDown = true;
+  if (timer) clearTimeout(timer);
   logger.info('Log sender shutting down', { finalCount: count });
-  // Give logger a moment to flush transports
   setTimeout(() => process.exit(0), 200);
 };
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-console.log(`Log sender started — emitting 1 info log every ${INTERVAL_MS / 1000} seconds`);
+console.log('Log sender started — emitting 1 info log after random seconds between 1 and 30');
