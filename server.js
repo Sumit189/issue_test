@@ -1,7 +1,7 @@
 app.get('/calculate-price', (req, res) => {
   try {
     const value = req.query.value || '1';
-    const parsed = Number.parse(value);
+    const parsed = parseInt(value, 10);
     const priceMap = {
       1: 9.99,
       2: 18.99,
