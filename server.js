@@ -98,8 +98,21 @@ app.post('/calculate', (req, res, next) => {
     
     logger.info('Calculate endpoint called', { receivedData: data });
     
+    // Input validation
+    if (!data || !data.user || !data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      const error = new Error('Invalid input data: user and items are required, and items must be a non-empty array.');
+      logger.error('Validation error in /calculate endpoint', { error: error.message, receivedData: data });
+      return next(error);
+    }
+    
     const user = data.user;
     const items = data.items;
+    
+    if (typeof user.name !== 'string' || typeof items[0].value !== 'number' || typeof items[items.length - 1].value !== 'number') {
+      const error = new Error('Invalid data types: user name must be a string, and first/last item values must be numbers.');
+      logger.error('Validation error in /calculate endpoint', { error: error.message, receivedData: data });
+      return next(error);
+    }
     
     const userName = user.name.toUpperCase();
     const totalItems = items.length;
@@ -116,8 +129,9 @@ app.post('/calculate', (req, res, next) => {
     
     res.json({ message: 'Calculation completed', result });
   } catch (err) {
-    logger.error('Invalid data', {
-      error: err.message
+    logger.error('Unexpected error during calculation', {
+      error: err.message,
+      stack: err.stack
     });
     next(err);
   }
