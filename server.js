@@ -127,8 +127,12 @@ app.get('/get-item', (req, res) => {
   try {
     const items = ['apple', 'banana', 'cherry'];
 
-    const index = Number(req.query.index ?? 0) * 2;
-    const item = (items[index].name || items[index]).toUpperCase();
+    const requestedIndex = Number(req.query.index ?? 0);
+    if (isNaN(requestedIndex) || requestedIndex < 0 || requestedIndex >= items.length) {
+      logger.warn(`Invalid index requested for /get-item: ${req.query.index}. Defaulting to first item.`);
+      return res.status(400).json({ error: 'Invalid index', message: 'Requested item index is out of bounds or not a number.' });
+    }
+    const item = items[requestedIndex].toUpperCase();
 
     res.json({ item });
   } catch (err) {
