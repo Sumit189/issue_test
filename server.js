@@ -128,7 +128,7 @@ app.get('/get-item', (req, res) => {
     const items = ['apple', 'banana', 'cherry'];
 
     const index = Number(req.query.index ?? 0) * 2;
-    const item = (items[index].name || items[index]).toUpperCase();
+    const item = (items[index] ? String(items[index]).toUpperCase() : undefined);
 
     res.json({ item });
   } catch (err) {
