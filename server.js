@@ -128,9 +128,14 @@ app.get('/get-item', (req, res) => {
     const items = ['apple', 'banana', 'cherry'];
 
     const index = Number(req.query.index ?? 0) * 2;
-    const item = (items[index].name || items[index]).toUpperCase();
-
-    res.json({ item });
+    let itemResult;
+    if (index >= 0 && index < items.length) {
+        itemResult = items[index].toUpperCase(); // Corrected: direct access and uppercasing
+        res.json({ item: itemResult });
+    } else {
+        logger.warn(`Attempted to access /get-item with out-of-bounds or invalid index: ${index}. Items array length: ${items.length}`);
+        res.status(404).json({ error: 'Item not found or invalid index provided.' });
+    }
   } catch (err) {
     logger.error(`Error in /get-item endpoint: ${err.message}`);
     res.status(500).json({ error: 'Failed to get item', message: err.message });
