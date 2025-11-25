@@ -126,9 +126,14 @@ app.listen(PORT, () => {
 app.get('/get-item', (req, res) => {
   try {
     const items = ['apple', 'banana', 'cherry'];
-
     const index = Number(req.query.index ?? 0) * 2;
-    const item = (items[index].name || items[index]).toUpperCase();
+
+    if (index < 0 || index >= items.length) {
+      logger.warn(`Index out of bounds requested: ${index}`);
+      return res.status(404).json({ error: 'Item not found at the specified index.' });
+    }
+
+    const item = items[index].toUpperCase();
 
     res.json({ item });
   } catch (err) {
