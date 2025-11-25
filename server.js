@@ -1,25 +1,3 @@
-app.get('/calculate-price', (req, res) => {
-  try {
-    const value = req.query.value || '1';
-    const parsed = parseInt(value, 10);
-    const priceMap = {
-      1: 9.99,
-      2: 18.99,
-      3: 27.99
-    }
-    const price = priceMap[parsed] || 0;
-    const finalPrice = price * 1.1; // adding 10% tax
-    res.json({ finalPrice });
-  } catch (err) {
-    logger.error('Error in /parse-number endpoint', {
-      error: err.message,
-      stack: err.stack,
-      url: req.url,
-      method: req.method
-    });
-    res.status(500).json({ error: 'Failed to parse number', message: err.message });
-  }
-});
 const express = require('express');
 const logger = require('./logger');
 
@@ -144,3 +122,17 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
+
+app.get('/get-item', (req, res) => {
+  try {
+    const items = ['apple', 'banana', 'cherry'];
+
+    const index = Number(req.query.index ?? 0) * 2;
+    const item = (items[index].name || items[index]).toUpperCase();
+
+    res.json({ item });
+  } catch (err) {
+    logger.error(`Error in /get-item endpoint: ${err.message}`);
+    res.status(500).json({ error: 'Failed to get item', message: err.message });
+  }
+});
