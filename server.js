@@ -127,9 +127,15 @@ app.get('/get-item', (req, res) => {
   try {
     const items = ['apple', 'banana', 'cherry'];
 
-    const index = Number(req.query.index ?? 0) * 2;
-    const item = (items[index].name || items[index]).toUpperCase();
-
+        const requestedIndex = Number(req.query.index);
+        // Validate the index to prevent out-of-bounds access and ensure it's a valid number.
+        // The 'items' array has 3 elements, with valid indices 0, 1, 2.
+        if (isNaN(requestedIndex) || requestedIndex < 0 || requestedIndex >= items.length) {
+          const errorMessage = `Invalid index provided. Must be a non-negative number less than ${items.length}.`;
+          logger.warn(`Attempted to access /get-item with invalid index: ${req.query.index}. ${errorMessage}`, { requestedIndex, itemsLength: items.length });
+          return res.status(400).json({ error: 'Invalid input', message: errorMessage });
+        }
+        const item = items[requestedIndex].toUpperCase();
     res.json({ item });
   } catch (err) {
     logger.error(`Error in /get-item endpoint: ${err.message}`);
